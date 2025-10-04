@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Number Guessing Game</title>
+  <style>
+    body { font-family: system-ui,Segoe UI,Roboto,Helvetica,Arial; display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f6f8fa }
+    .card { background:white;padding:24px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.08);width:340px }
+    input[type="number"]{width:100%;padding:8px;margin:8px 0;border-radius:4px;border:1px solid #ddd}
+    button{padding:10px 14px;border-radius:6px;border:0;background:#0366d6;color:white;cursor:pointer}
+    .log{margin-top:12px;color:#333}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Number Guessing Game</h2>
+    <p>I'm thinking of a number between 1 and 100. Can you guess it?</p>
+    <input id="guess" type="number" min="1" max="100" placeholder="Enter a number (1-100)">
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button id="check">Check</button>
+      <button id="new">New Game</button>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <script>
+    let secret = Math.floor(Math.random()*100)+1;
+    let attempts = 0;
+    const log = document.getElementById('log');
+    const guessInput = document.getElementById('guess');
+    function logMsg(msg){ log.textContent = msg }
+    document.getElementById('check').addEventListener('click', ()=>{
+      const val = Number(guessInput.value);
+      if(!val || val<1 || val>100) return logMsg('Please enter a number between 1 and 100');
+      attempts++;
+      if(val === secret) {
+        logMsg(`🎉 Correct! You found it in ${attempts} attempts.`);
+      } else if(val < secret) {
+        logMsg('Too low — try a higher number');
+      } else {
+        logMsg('Too high — try a lower number');
+      }
+    });
+    document.getElementById('new').addEventListener('click', ()=>{
+      secret = Math.floor(Math.random()*100)+1; attempts = 0; guessInput.value = '';
+      logMsg('New game started. Good luck!');
+    });
+  </script>
+</body>
+</html>

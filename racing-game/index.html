@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Simple Racing Game</title>
+  <style>
+    :root{--bg:#2b2b2b;--road:#444;--lane:#666;--hud:#e6eef8}
+    html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto,Arial}
+    body{display:flex;align-items:center;justify-content:center;background:var(--bg);color:white}
+    .wrap{width:360px;margin:24px}
+    canvas{display:block;width:100%;height:auto;border-radius:8px;background:#2a2a2a;box-shadow:0 8px 24px rgba(0,0,0,0.6)}
+    .controls{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+    button{background:#0366d6;border:none;color:white;padding:8px 12px;border-radius:6px;cursor:pointer}
+    .info{color:var(--hud);font-size:14px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <canvas id="game" width="360" height="600"></canvas>
+    <div class="controls">
+      <div class="info">Use ← → or A/D to move. Avoid cars. Distance: <span id="score">0</span>m</div>
+      <div>
+        <button id="start">Start</button>
+        <button id="restart" disabled>Restart</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // Simple top-down racing game
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  let running = false, gameOver = false;
+  let player = { x: W/2 - 18, y: H - 90, w: 36, h: 60, speed: 6 };
+  let obstacles = [];
+  let keys = {};
+  let laneWidth = 120; // visual guide
+  let scroll = 0;
+  let spawnTimer = 0;
+  let distance = 0;
+
+  function reset(){
+    running = false; gameOver = false; obstacles = []; keys = {}; scroll = 0; spawnTimer = 0; distance = 0;
+    player.x = W/2 - player.w/2;
+    document.getElementById('score').textContent = 0;
+    document.getElementById('restart').disabled = true;
+    draw();
+  }
+
+  function start(){ running = true; gameOver = false; document.getElementById('restart').disabled = false; loop(); }
+
+  function spawnObstacle(){
+    const lane = Math.floor(Math.random()*3);
+    const w = 60 + Math.floor(Math.random()*20);
+    const h = 40 + Math.floor(Math.random()*30);
+    const x = 30 + lane*laneWidth + (laneWidth - w)/2;
+    obstacles.push({ x, y: -h, w, h, speed: 2 + Math.random()*2 });
+  }
+
+  function rectsCollide(a,b){
+    return !(a.x + a.w < b.x || a.x > b.x + b.w || a.y + a.h < b.y || a.y > b.y + b.h);
+  }
+
+  function update(){
+    if(!running) return;
+    // input
+    if(keys['ArrowLeft'] || keys['a']) player.x -= player.speed;
+    if(keys['ArrowRight'] || keys['d']) player.x += player.speed;
+    // clamp
+    player.x = Math.max(20, Math.min(W - player.w - 20, player.x));
+
+    // spawn
+    spawnTimer += 1;
+    if(spawnTimer > 60){ spawnTimer = 0; spawnObstacle(); }
+
+    // move obstacles
+    for(let o of obstacles){ o.y += o.speed + (distance/2000); }
+    obstacles = obstacles.filter(o => o.y < H + 100);
+
+    // collisions
+    for(let o of obstacles){ if(rectsCollide(player, o)){ running = false; gameOver = true; } }
+
+    // scroll / distance
+    scroll += 4; if(scroll > 40) scroll = 0; distance += 1;
+    document.getElementById('score').textContent = Math.floor(distance);
+  }
+
+  function drawRoad(){
+    // road background
+    ctx.fillStyle = '#2b2b2b'; ctx.fillRect(0,0,W,H);
+    const roadX = 30; const roadW = W - 60;
+    ctx.fillStyle = '#3a3a3a'; ctx.fillRect(roadX,0,roadW,H);
+    // lane markings
+    ctx.fillStyle = '#999';
+    ctx.fillRect(roadX + laneWidth - 4, 0, 8, H);
+    ctx.fillRect(roadX + 2*laneWidth - 4, 0, 8, H);
+    // dashed center line
+    ctx.fillStyle = '#e6eef8';
+    for(let y = -40 + scroll; y < H; y += 40){ ctx.fillRect(W/2 - 3, y, 6, 24); }
+  }
+
+  function draw(){
+    // clear
+    ctx.clearRect(0,0,W,H);
+    drawRoad();
+
+    // draw player
+    ctx.fillStyle = '#00b894'; ctx.fillRect(player.x, player.y, player.w, player.h);
+    // wheels
+    ctx.fillStyle = '#1b1b1b'; ctx.fillRect(player.x+6, player.y+8, 8, 12); ctx.fillRect(player.x+player.w-14, player.y+8, 8, 12);
+
+    // obstacles
+    ctx.fillStyle = '#ff7675';
+    for(let o of obstacles){ ctx.fillRect(o.x, o.y, o.w, o.h); }
+
+    // HUD
+    if(gameOver){ ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0,H/2 - 40, W, 80); ctx.fillStyle = 'white'; ctx.font = '20px sans-serif'; ctx.textAlign='center'; ctx.fillText('Game Over — press Restart', W/2, H/2+6); }
+  }
+
+  function loop(){ update(); draw(); if(running) requestAnimationFrame(loop); }
+
+  // input handlers
+  window.addEventListener('keydown', (e)=>{ keys[e.key] = true; if(e.key===' ' && !running) start(); });
+  window.addEventListener('keyup', (e)=>{ keys[e.key] = false; });
+
+  document.getElementById('start').addEventListener('click', ()=>{ if(!running) start(); });
+  document.getElementById('restart').addEventListener('click', ()=>{ reset(); start(); });
+
+  // initial draw
+  reset();
+  </script>
+</body>
+</html>
